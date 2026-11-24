@@ -95,7 +95,7 @@ export default function MyAppsPage() {
               style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',
                 borderBottom:'1px solid #E8EAED',cursor:'pointer'}}
               onClick={()=>router.push(`/apps/${a.id}`)}>
-              <AppIcon emoji={a.icon_emoji} color={a.icon_color} size={48} radius={12}/>
+              <AppIcon emoji={a.icon_emoji} color={a.icon_color} size={48} radius={12} appName={a.name}/>
               <div style={{flex:1}}>
                 <div style={{fontSize:14,fontWeight:500,color:'#202124'}}>{a.name}</div>
                 <div style={{fontSize:12,color:'#5F6368',display:'flex',alignItems:'center',gap:3}}>
@@ -126,7 +126,7 @@ export default function MyAppsPage() {
             <div key={a.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',
               borderBottom:'1px solid #E8EAED',cursor:'pointer'}}
               onClick={()=>router.push(`/apps/${a.id}`)}>
-              <AppIcon emoji={a.icon_emoji} color={a.icon_color} size={48} radius={12}/>
+              <AppIcon emoji={a.icon_emoji} color={a.icon_color} size={48} radius={12} appName={a.name}/>
               <div style={{flex:1}}>
                 <div style={{fontSize:14,fontWeight:500,color:'#202124'}}>{a.name}</div>
                 <div style={{fontSize:12,color:'#5F6368'}}>Updated {ago(a.installed_at)}</div>
@@ -156,7 +156,7 @@ export default function MyAppsPage() {
             <div key={a.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',
               borderBottom:'1px solid #E8EAED',cursor:'pointer'}}
               onClick={()=>router.push(`/apps/${a.id}`)}>
-              <AppIcon emoji={a.icon_emoji} color={a.icon_color} size={48} radius={12}/>
+              <AppIcon emoji={a.icon_emoji} color={a.icon_color} size={48} radius={12} appName={a.name}/>
               <div style={{flex:1}}>
                 <div style={{fontSize:14,fontWeight:500,color:'#202124'}}>{a.name}</div>
                 <div style={{fontSize:12,color:'#5F6368'}}>{a.size_mb} MB · {a.category}</div>

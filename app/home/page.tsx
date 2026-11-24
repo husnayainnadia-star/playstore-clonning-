@@ -258,7 +258,7 @@ function AppCard({ app, onClick }: { app:App; onClick:()=>void }) {
     <div onClick={onClick}
       style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'8px 10px',
         cursor:'pointer', borderRadius:8, minWidth:88, flexShrink:0 }}>
-      <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={56} />
+      <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={56} appName={app.name} />
       <span style={{ fontSize:12, color:'#202124', textAlign:'center', lineHeight:1.3,
         maxWidth:76, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
         {app.name}
@@ -278,7 +278,7 @@ function ChartRow({ app, rank, onClick, onInstall }:
       style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 0',
         borderBottom:'1px solid #E8EAED', cursor:'pointer' }}>
       <span style={{ fontSize:14, fontWeight:500, color:'#5F6368', minWidth:22, textAlign:'right' }}>{rank}</span>
-      <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={46} />
+      <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={46} appName={app.name} />
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontSize:14, fontWeight:500, color:'#202124', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{app.name}</div>
         <div style={{ fontSize:12, color:'#5F6368', display:'flex', alignItems:'center', gap:3 }}>

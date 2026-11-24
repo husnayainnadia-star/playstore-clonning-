@@ -100,7 +100,7 @@ export default function DetailPage({ params }: { params: Promise<{id:string}> })
 
         {/* Header: icon + name */}
         <div style={{display:'flex',gap:14,padding:'8px 16px 12px'}}>
-          <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={76} radius={16} />
+          <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={76} radius={16} appName={app.name} />
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:21,fontWeight:500,color:'#202124',lineHeight:1.2}}>{app.name}</div>
             <div style={{color:'#1A73E8',fontSize:13,margin:'5px 0 6px'}}>{app.developer}</div>
@@ -145,7 +145,7 @@ export default function DetailPage({ params }: { params: Promise<{id:string}> })
                     style={{transition:'stroke-dashoffset .08s linear'}}/>
                 </svg>
                 <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={52} radius={12}/>
+                  <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={52} radius={12} appName={app.name}/>
                 </div>
               </div>
               <div style={{fontSize:14,fontWeight:500,color:'#202124'}}>{app.name}</div>
@@ -169,7 +169,7 @@ export default function DetailPage({ params }: { params: Promise<{id:string}> })
             </div>
           ) : installed ? (
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
-              <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={88} radius={20}/>
+              <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={88} radius={20} appName={app.name}/>
               <div style={{fontSize:20,fontWeight:500,color:'#202124'}}>{app.name}</div>
               <div style={{display:'flex',alignItems:'center',gap:4,fontSize:13,color:'#34A853'}}>
                 <span className="material-icons-round" style={{fontSize:16}}>verified_user</span>
