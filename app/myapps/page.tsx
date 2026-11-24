@@ -8,181 +8,174 @@ import AppIcon from '@/components/AppIcon';
 import Toast, { showToast } from '@/components/Toast';
 
 interface InstalledApp {
-  id: number; name: string; icon_emoji: string; icon_color: string;
-  size_mb: number; installed_at: string; category: string;
+  id:number; name:string; icon_emoji:string; icon_color:string;
+  size_mb:number; installed_at:string; category:string;
 }
 
-const TABS = ['Updates', 'Installed', 'Library'];
+const TABS = ['Updates','Installed','Library'];
+
+// Demo pending updates
+const PENDING = [
+  {id:4,name:'YouTube',    icon_emoji:'▶️',icon_color:'#FF0000',size_mb:28},
+];
 
 export default function MyAppsPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState(0);
-  const [installs, setInstalls] = useState<InstalledApp[]>([]);
+  const [tab, setTab]       = useState(0);
+  const [apps, setApps]     = useState<InstalledApp[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchInstalls() {
+    (async () => {
       try {
-        const res = await fetch('/api/installs');
-        if (res.ok) {
-          const data = await res.json();
-          setInstalls(data.installs || []);
-        }
-      } catch { /* ignore */ }
+        const r = await fetch('/api/installs');
+        if (r.ok) { const d = await r.json(); setApps(d.installs||[]); }
+      } catch {}
       finally { setLoading(false); }
-    }
-    fetchInstalls();
+    })();
   }, []);
 
-  function timeAgo(dateStr: string) {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const h = Math.floor(diff / 3600000);
-    if (h < 24) return `${h}h ago`;
-    return `${Math.floor(h / 24)}d ago`;
+  function ago(s:string) {
+    const h = Math.floor((Date.now()-new Date(s).getTime())/3600000);
+    return h<24 ? `${h}h ago` : `${Math.floor(h/24)}d ago`;
   }
 
   return (
-    <div className="flex flex-col h-full min-h-screen bg-white animate-in relative">
+    <div style={{display:'flex',flexDirection:'column',flex:1,background:'#fff',position:'relative'}} className="animate-in">
       <StatusBar />
 
-      {/* App Bar */}
-      <div className="flex items-center px-4 py-2 flex-shrink-0">
-        <button onClick={() => router.back()} className="p-2 rounded-full hover:bg-[#F8F9FA]">
-          <span className="material-icons-round text-[#202124]">arrow_back</span>
+      {/* App bar */}
+      <div style={{display:'flex',alignItems:'center',padding:'4px 8px'}}>
+        <button onClick={()=>router.back()} style={{background:'none',border:'none',cursor:'pointer',padding:8,borderRadius:20,display:'flex'}}>
+          <span className="material-icons-round" style={{fontSize:22,color:'#202124'}}>arrow_back</span>
         </button>
-        <h1 className="flex-1 text-[20px] font-medium text-[#202124] ml-2">My apps &amp; games</h1>
-        <button className="p-2 rounded-full hover:bg-[#F8F9FA]">
-          <span className="material-icons-round text-[#202124]">more_vert</span>
+        <h1 style={{flex:1,fontSize:20,fontWeight:400,color:'#202124',margin:'0 0 0 4px',fontFamily:'inherit'}}>My apps &amp; games</h1>
+        <button style={{background:'none',border:'none',cursor:'pointer',padding:8,borderRadius:20,display:'flex'}}>
+          <span className="material-icons-round" style={{fontSize:22,color:'#202124'}}>more_vert</span>
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex px-4 border-b border-[#E8EAED] flex-shrink-0">
-        {TABS.map((tab, i) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(i)}
-            className="px-4 py-3 text-[14px] font-medium border-none bg-transparent cursor-pointer relative"
-            style={{ color: activeTab === i ? '#1A73E8' : '#5F6368' }}
-          >
-            {tab}
-            {activeTab === i && (
-              <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#1A73E8] rounded-t" />
-            )}
+      <div style={{display:'flex',borderBottom:'1px solid #E8EAED',padding:'0 16px',flexShrink:0}}>
+        {TABS.map((t,i)=>(
+          <button key={t} onClick={()=>setTab(i)}
+            style={{padding:'11px 16px',fontSize:14,fontWeight:500,border:'none',background:'none',
+              cursor:'pointer',color:tab===i?'#1A73E8':'#5F6368',fontFamily:'inherit',position:'relative'}}>
+            {t}
+            {tab===i && <div style={{position:'absolute',bottom:0,left:0,right:0,height:3,background:'#1A73E8',borderRadius:'2px 2px 0 0'}}/>}
           </button>
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div style={{flex:1,overflowY:'auto'}} className="no-scrollbar">
 
-        {/* UPDATES tab */}
-        {activeTab === 0 && (
-          <>
-            {/* Auto-update card */}
-            <div className="mx-4 my-3 p-4 bg-[#E8F0FE] rounded-lg flex items-center gap-3">
-              <span className="material-icons-round text-[24px] text-[#1A73E8]">verified_user</span>
-              <p className="flex-1 text-[13px] text-[#202124] leading-relaxed">
-                Turn on auto-updates<br />to keep your apps up to date
-              </p>
-              <button
-                onClick={() => showToast('Auto-update enabled!')}
-                className="text-[#1A73E8] font-medium text-[14px] border-none bg-transparent cursor-pointer"
-              >
-                Turn on
-              </button>
-            </div>
+        {/* UPDATES */}
+        {tab===0 && <>
+          {/* Auto-update banner */}
+          <div style={{margin:'12px 16px',padding:'12px 14px',background:'#E8F0FE',borderRadius:8,
+            display:'flex',alignItems:'center',gap:12}}>
+            <span className="material-icons-round" style={{fontSize:24,color:'#1A73E8',flexShrink:0}}>verified_user</span>
+            <p style={{flex:1,fontSize:13,color:'#202124',lineHeight:1.5,margin:0}}>
+              Turn on auto-updates<br/>to keep your apps up to date
+            </p>
+            <button onClick={()=>showToast('Auto-update enabled')}
+              style={{background:'none',border:'none',color:'#1A73E8',fontWeight:500,fontSize:14,
+                cursor:'pointer',fontFamily:'inherit',flexShrink:0}}>Turn on</button>
+          </div>
 
-            <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-[14px] font-medium text-[#202124]">
-                Updates pending ({Math.max(0, 3 - installs.length)})
-              </span>
-              <button
-                onClick={() => showToast('Updating all apps...')}
-                className="bg-[#1A73E8] text-white rounded-full px-4 py-2 text-[13px] font-medium border-none cursor-pointer"
-              >
-                Update all
-              </button>
-            </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 16px 6px'}}>
+            <span style={{fontSize:14,fontWeight:500,color:'#202124'}}>Updates pending ({PENDING.length})</span>
+            <button onClick={()=>showToast('Updating all...')}
+              style={{background:'#1A73E8',color:'#fff',border:'none',borderRadius:20,
+                padding:'8px 16px',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:'inherit'}}>Update all</button>
+          </div>
 
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="w-6 h-6 border-4 border-[#E8EAED] border-t-[#1A73E8] rounded-full animate-spin" />
-              </div>
-            ) : installs.length === 0 ? (
-              <div className="text-center py-12 text-[#5F6368] text-[14px]">
-                All apps are up to date ✓
-              </div>
-            ) : (
-              installs.map(app => (
-                <div
-                  key={app.id}
-                  className="flex items-center gap-3 px-4 py-[10px] border-b border-[#E8EAED] cursor-pointer"
-                  onClick={() => router.push(`/apps/${app.id}`)}
-                >
-                  <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={48} radius={12} />
-                  <div className="flex-1">
-                    <div className="text-[14px] font-medium text-[#202124]">{app.name}</div>
-                    <div className="text-[12px] text-[#5F6368]">Updated {timeAgo(app.installed_at)}</div>
-                  </div>
-                  <button
-                    onClick={e => { e.stopPropagation(); showToast(`Opening ${app.name}`); }}
-                    className="border border-[#E8EAED] rounded-full px-5 py-2 text-[13px] text-[#202124] bg-white cursor-pointer"
-                  >
-                    Open
-                  </button>
+          {PENDING.map(a=>(
+            <div key={a.id}
+              style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',
+                borderBottom:'1px solid #E8EAED',cursor:'pointer'}}
+              onClick={()=>router.push(`/apps/${a.id}`)}>
+              <AppIcon emoji={a.icon_emoji} color={a.icon_color} size={48} radius={12}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:500,color:'#202124'}}>{a.name}</div>
+                <div style={{fontSize:12,color:'#5F6368',display:'flex',alignItems:'center',gap:3}}>
+                  {a.size_mb} MB
+                  <span className="material-icons-round" style={{fontSize:14,color:'#5F6368'}}>keyboard_arrow_down</span>
                 </div>
-              ))
-            )}
-          </>
-        )}
+              </div>
+              <button onClick={e=>{e.stopPropagation();showToast(`Updating ${a.name}...`);}}
+                style={{background:'#1A73E8',color:'#fff',border:'none',borderRadius:20,
+                  padding:'8px 20px',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:'inherit'}}>Update</button>
+            </div>
+          ))}
 
-        {/* INSTALLED tab */}
-        {activeTab === 1 && (
+          {/* Recently updated */}
+          <div style={{padding:'12px 16px 6px',display:'flex',alignItems:'center',gap:6,cursor:'pointer'}}
+            onClick={()=>{}}>
+            <span style={{fontSize:14,fontWeight:500,color:'#202124'}}>Recently updated</span>
+            <span className="material-icons-round" style={{fontSize:18,color:'#5F6368'}}>keyboard_arrow_down</span>
+          </div>
+
+          {loading ? (
+            <div style={{display:'flex',justifyContent:'center',padding:24}}>
+              <div style={{width:24,height:24,border:'3px solid #E8EAED',borderTopColor:'#1A73E8',borderRadius:12}} className="spin"/>
+            </div>
+          ) : apps.length===0 ? (
+            <div style={{textAlign:'center',padding:24,color:'#5F6368',fontSize:14}}>No recently updated apps</div>
+          ) : apps.map(a=>(
+            <div key={a.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',
+              borderBottom:'1px solid #E8EAED',cursor:'pointer'}}
+              onClick={()=>router.push(`/apps/${a.id}`)}>
+              <AppIcon emoji={a.icon_emoji} color={a.icon_color} size={48} radius={12}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:500,color:'#202124'}}>{a.name}</div>
+                <div style={{fontSize:12,color:'#5F6368'}}>Updated {ago(a.installed_at)}</div>
+              </div>
+              <button onClick={e=>{e.stopPropagation();showToast(`Opening ${a.name}`);}}
+                style={{border:'1.5px solid #DADCE0',borderRadius:20,padding:'7px 20px',fontSize:13,
+                  color:'#202124',background:'#fff',cursor:'pointer',fontFamily:'inherit'}}>Open</button>
+            </div>
+          ))}
+        </>}
+
+        {/* INSTALLED */}
+        {tab===1 && (
           loading ? (
-            <div className="flex justify-center py-8">
-              <div className="w-6 h-6 border-4 border-[#E8EAED] border-t-[#1A73E8] rounded-full animate-spin" />
+            <div style={{display:'flex',justifyContent:'center',padding:32}}>
+              <div style={{width:24,height:24,border:'3px solid #E8EAED',borderTopColor:'#1A73E8',borderRadius:12}} className="spin"/>
             </div>
-          ) : installs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <span className="material-icons-round text-[48px] text-[#9AA0A6]">apps</span>
-              <p className="text-[14px] text-[#5F6368]">No installed apps yet</p>
-              <button
-                onClick={() => router.push('/home')}
-                className="mt-2 bg-[#1A73E8] text-white rounded-full px-6 py-2 text-[14px] border-none cursor-pointer"
-              >
-                Explore apps
-              </button>
+          ) : apps.length===0 ? (
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:64,gap:12}}>
+              <span className="material-icons-round" style={{fontSize:48,color:'#9AA0A6'}}>apps</span>
+              <p style={{fontSize:14,color:'#5F6368',margin:0}}>No installed apps yet</p>
+              <button onClick={()=>router.push('/home')}
+                style={{marginTop:8,background:'#1A73E8',color:'#fff',border:'none',borderRadius:20,
+                  padding:'10px 24px',fontSize:14,cursor:'pointer',fontFamily:'inherit'}}>Explore apps</button>
             </div>
-          ) : (
-            installs.map(app => (
-              <div
-                key={app.id}
-                className="flex items-center gap-3 px-4 py-[10px] border-b border-[#E8EAED] cursor-pointer"
-                onClick={() => router.push(`/apps/${app.id}`)}
-              >
-                <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={48} radius={12} />
-                <div className="flex-1">
-                  <div className="text-[14px] font-medium text-[#202124]">{app.name}</div>
-                  <div className="text-[12px] text-[#5F6368]">{app.size_mb} MB · {app.category}</div>
-                </div>
-                <button
-                  onClick={e => { e.stopPropagation(); showToast(`Opening ${app.name}`); }}
-                  className="border border-[#E8EAED] rounded-full px-5 py-2 text-[13px] text-[#202124] bg-white cursor-pointer"
-                >
-                  Open
-                </button>
+          ) : apps.map(a=>(
+            <div key={a.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',
+              borderBottom:'1px solid #E8EAED',cursor:'pointer'}}
+              onClick={()=>router.push(`/apps/${a.id}`)}>
+              <AppIcon emoji={a.icon_emoji} color={a.icon_color} size={48} radius={12}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:500,color:'#202124'}}>{a.name}</div>
+                <div style={{fontSize:12,color:'#5F6368'}}>{a.size_mb} MB · {a.category}</div>
               </div>
-            ))
-          )
+              <button onClick={e=>{e.stopPropagation();showToast(`Opening ${a.name}`);}}
+                style={{border:'1.5px solid #DADCE0',borderRadius:20,padding:'7px 20px',fontSize:13,
+                  color:'#202124',background:'#fff',cursor:'pointer',fontFamily:'inherit'}}>Open</button>
+            </div>
+          ))
         )}
 
-        {/* LIBRARY tab */}
-        {activeTab === 2 && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <span className="material-icons-round text-[48px] text-[#9AA0A6]">library_books</span>
-            <p className="text-[14px] text-[#5F6368]">Your library is empty</p>
+        {/* LIBRARY */}
+        {tab===2 && (
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:64,gap:12}}>
+            <span className="material-icons-round" style={{fontSize:48,color:'#9AA0A6'}}>library_books</span>
+            <p style={{fontSize:14,color:'#5F6368',margin:0}}>Your library is empty</p>
           </div>
         )}
+
       </div>
 
       <BottomNav active="Books" />

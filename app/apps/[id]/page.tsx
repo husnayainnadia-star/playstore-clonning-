@@ -7,304 +7,310 @@ import AppIcon from '@/components/AppIcon';
 import Toast, { showToast } from '@/components/Toast';
 
 interface App {
-  id: number; name: string; developer: string; description: string;
-  icon_emoji: string; icon_color: string; category: string;
-  rating: number; review_count: number; download_count: string;
-  age_rating: string; size_mb: number; tags: string[];
+  id:number; name:string; developer:string; description:string;
+  icon_emoji:string; icon_color:string; category:string;
+  rating:number; review_count:number; download_count:string;
+  age_rating:string; size_mb:number; tags:string[];
 }
 
-const SCREENSHOT_COLORS = ['#1a1a2e','#16213e','#0f3460','#533483','#e94560'];
-const SCREENSHOT_EMOJIS = ['🎬','📱','🎯','✨','🚀'];
+const SS_COLORS = ['#0d1117','#161b22','#1c2128','#21262d','#30363d'];
 
-export default function AppDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function DetailPage({ params }: { params: Promise<{id:string}> }) {
   const router = useRouter();
   const { id } = use(params);
-  const [app, setApp] = useState<App | null>(null);
+  const [app, setApp] = useState<App|null>(null);
   const [installed, setInstalled] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [starRating, setStarRating] = useState(0);
+  const [stars, setStars] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchApp() {
+    (async () => {
       try {
-        const res = await fetch(`/api/apps/${id}`);
-        const data = await res.json();
-        setApp(data.app);
-
-        // Check if installed
-        const installsRes = await fetch('/api/installs');
-        if (installsRes.ok) {
-          const installsData = await installsRes.json();
-          setInstalled(installsData.installs?.some((i: App) => i.id === data.app?.id));
-        }
-      } catch { /* ignore */ }
+        const r = await fetch(`/api/apps/${id}`); if (!r.ok) return;
+        const d = await r.json(); setApp(d.app);
+        const ir = await fetch('/api/installs'); if (!ir.ok) return;
+        const id2 = await ir.json();
+        setInstalled(id2.installs?.some((x:App) => x.id === d.app?.id));
+      } catch {}
       finally { setLoading(false); }
-    }
-    fetchApp();
+    })();
   }, [id]);
 
-  async function handleInstall() {
-    setInstalling(true);
-    setProgress(0);
-
-    // Animate progress
-    const interval = setInterval(() => {
+  function doInstall() {
+    setInstalling(true); setProgress(0);
+    const t = setInterval(() => {
       setProgress(p => {
-        if (p >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return p + 2;
+        if (p >= 100) { clearInterval(t); return 100; }
+        return p + 1.4;
       });
-    }, 50);
-
-    // After animation, record install
+    }, 40);
     setTimeout(async () => {
-      clearInterval(interval);
-      setProgress(100);
-      await fetch(`/api/apps/${id}/install`, { method: 'POST' });
-      setInstalled(true);
-      setInstalling(false);
+      clearInterval(t); setProgress(100);
+      await fetch(`/api/apps/${id}/install`, {method:'POST'});
+      setInstalled(true); setInstalling(false);
       showToast(`${app?.name} installed!`);
-    }, 2600);
+    }, 3000);
   }
 
-  async function handleUninstall() {
-    await fetch(`/api/apps/${id}/install`, { method: 'DELETE' });
-    setInstalled(false);
-    showToast(`${app?.name} uninstalled`);
+  async function doUninstall() {
+    await fetch(`/api/apps/${id}/install`, {method:'DELETE'});
+    setInstalled(false); showToast(`${app?.name} uninstalled`);
   }
 
-  async function handleRate(rating: number) {
-    setStarRating(rating);
+  async function rateStar(n:number) {
+    setStars(n);
     await fetch(`/api/apps/${id}/review`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rating }),
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({rating:n}),
     });
-    showToast(`You rated ${app?.name} ${rating} star${rating > 1 ? 's' : ''}`);
+    showToast(`Rated ${n} ★`);
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-screen">
-        <div className="w-8 h-8 border-4 border-[#E8EAED] border-t-[#1A73E8] rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',flex:1}}>
+      <div style={{width:32,height:32,border:'3px solid #E8EAED',borderTopColor:'#1A73E8',borderRadius:16}} className="spin"/>
+    </div>
+  );
+  if (!app) return (
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',flex:1,gap:12}}>
+      <span className="material-icons-round" style={{fontSize:48,color:'#9AA0A6'}}>error_outline</span>
+      <span style={{color:'#5F6368'}}>App not found</span>
+      <button onClick={()=>router.back()} style={{color:'#1A73E8',background:'none',border:'none',cursor:'pointer',fontSize:14}}>Go back</button>
+    </div>
+  );
 
-  if (!app) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full min-h-screen gap-4">
-        <span className="material-icons-round text-[48px] text-[#9AA0A6]">error_outline</span>
-        <p className="text-[#5F6368]">App not found</p>
-        <button onClick={() => router.back()} className="text-[#1A73E8]">Go back</button>
-      </div>
-    );
-  }
-
-  const circumference = 408;
-  const offset = circumference - (circumference * progress / 100);
+  const circ = 2 * Math.PI * 44; // r=44
+  const offset = circ - (circ * Math.min(progress,100) / 100);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white animate-in relative">
+    <div style={{display:'flex',flexDirection:'column',flex:1,background:'#fff',position:'relative'}} className="animate-in">
       <StatusBar />
 
-      {/* App Bar */}
-      <div className="flex items-center px-4 py-2 flex-shrink-0">
-        <button onClick={() => router.back()} className="p-2 rounded-full hover:bg-[#F8F9FA]">
-          <span className="material-icons-round text-[#202124]">arrow_back</span>
-        </button>
-        <div className="flex-1" />
-        <button className="p-2 rounded-full hover:bg-[#F8F9FA]">
-          <span className="material-icons-round text-[#202124]">search</span>
-        </button>
-        <button className="p-2 rounded-full hover:bg-[#F8F9FA]">
-          <span className="material-icons-round text-[#202124]">more_vert</span>
-        </button>
+      {/* App bar */}
+      <div style={{display:'flex',alignItems:'center',padding:'4px 8px'}}>
+        <Btn icon="arrow_back" onClick={()=>router.back()} />
+        <div style={{flex:1}}/>
+        <Btn icon="search" onClick={()=>router.push('/search')} />
+        <Btn icon="more_vert" onClick={()=>showToast('More options')} />
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar">
-        {/* Header */}
-        <div className="flex gap-4 px-4 pb-3">
-          <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={72} radius={18} />
-          <div className="flex-1">
-            <h2 className="text-[20px] font-medium text-[#202124]">{app.name}</h2>
-            <div className="text-[#1A73E8] text-[13px] my-1">{app.developer}</div>
-            <div className="flex gap-2 flex-wrap">
-              <span className="text-[11px] text-[#5F6368] border border-[#E8EAED] rounded px-2 py-[2px]">Contains ads</span>
-              <span className="text-[11px] text-[#5F6368] border border-[#E8EAED] rounded px-2 py-[2px]">In-app purchases</span>
+      <div style={{flex:1,overflowY:'auto'}} className="no-scrollbar">
+
+        {/* Header: icon + name */}
+        <div style={{display:'flex',gap:14,padding:'8px 16px 12px'}}>
+          <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={76} radius={16} />
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:21,fontWeight:500,color:'#202124',lineHeight:1.2}}>{app.name}</div>
+            <div style={{color:'#1A73E8',fontSize:13,margin:'5px 0 6px'}}>{app.developer}</div>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              <Chip>Contains ads</Chip>
+              <Chip>In-app purchases</Chip>
             </div>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="flex border-t border-b border-[#E8EAED] py-3">
-          <div className="flex-1 flex flex-col items-center gap-[2px] border-r border-[#E8EAED]">
-            <div className="text-[14px] font-medium text-[#202124] flex items-center gap-[2px]">
-              {app.rating}
-              <span className="material-icons-round text-[14px] text-[#FBBC04]">star</span>
-            </div>
-            <div className="text-[11px] text-[#5F6368]">
-              {app.review_count > 1000000
-                ? `${(app.review_count / 1000000).toFixed(0)}M reviews`
-                : `${app.review_count.toLocaleString()} reviews`}
-            </div>
-          </div>
-          <div className="flex-1 flex flex-col items-center gap-[2px] border-r border-[#E8EAED]">
-            <div className="text-[14px] font-medium text-[#202124]">{app.download_count}</div>
-            <div className="text-[11px] text-[#5F6368]">Downloads</div>
-          </div>
-          <div className="flex-1 flex flex-col items-center gap-[2px]">
-            <div className="text-[14px] font-medium text-[#202124] flex items-center gap-[2px]">
-              <span className="material-icons-round text-[16px] text-[#5F6368]">info_outline</span>
+        {/* Stats row */}
+        <div style={{display:'flex',borderTop:'1px solid #E8EAED',borderBottom:'1px solid #E8EAED',padding:'10px 0'}}>
+          <StatCol label={`${formatCount(app.review_count)} reviews`}>
+            <span style={{display:'flex',alignItems:'center',gap:1,fontSize:14,fontWeight:500,color:'#202124'}}>
+              {app.rating}<span className="material-icons-round" style={{fontSize:14,color:'#FBBC04'}}>star</span>
+            </span>
+          </StatCol>
+          <div style={{width:1,background:'#E8EAED'}}/>
+          <StatCol label="Downloads">
+            <span style={{fontSize:14,fontWeight:500,color:'#202124'}}>{app.download_count}</span>
+          </StatCol>
+          <div style={{width:1,background:'#E8EAED'}}/>
+          <StatCol label="Rated for">
+            <span style={{display:'flex',alignItems:'center',gap:2,fontSize:14,fontWeight:500,color:'#202124'}}>
+              <span className="material-icons-round" style={{fontSize:14,color:'#5F6368'}}>info_outline</span>
               {app.age_rating}
-            </div>
-            <div className="text-[11px] text-[#5F6368]">Rated for</div>
-          </div>
+            </span>
+          </StatCol>
         </div>
 
-        {/* Install / Download progress */}
-        <div className="px-4 py-3">
+        {/* Install button / progress */}
+        <div style={{padding:'12px 16px'}}>
           {installing ? (
-            <div className="flex flex-col items-center gap-3">
-              <div className="relative w-24 h-24">
-                <svg className="absolute inset-0 -rotate-90" width="96" height="96" viewBox="0 0 96 96">
-                  <circle cx="48" cy="48" r="44" fill="none" stroke="#E8EAED" strokeWidth="6"/>
-                  <circle
-                    cx="48" cy="48" r="44" fill="none" stroke="#1A73E8" strokeWidth="6"
-                    strokeLinecap="round" strokeDasharray="276"
-                    strokeDashoffset={276 - (276 * progress / 100)}
-                    style={{ transition: 'stroke-dashoffset .1s' }}
-                  />
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+              <div style={{position:'relative',width:100,height:100}}>
+                <svg width="100" height="100" style={{transform:'rotate(-90deg)'}}>
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="#E8EAED" strokeWidth="6"/>
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="#1A73E8" strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={circ}
+                    strokeDashoffset={offset}
+                    style={{transition:'stroke-dashoffset .08s linear'}}/>
                 </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={48} radius={12} />
+                <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={52} radius={12}/>
                 </div>
               </div>
-              <div className="text-[13px] text-[#5F6368]">{progress}% of {app.size_mb} MB</div>
-              <div className="flex items-center gap-1 text-[12px] text-[#5F6368]">
-                <span className="material-icons-round text-[14px] text-[#34A853]">verified_user</span>
+              <div style={{fontSize:14,fontWeight:500,color:'#202124'}}>{app.name}</div>
+              <div style={{fontSize:13,color:'#5F6368'}}>{Math.min(100,Math.round(progress))}% of {app.size_mb} MB</div>
+              <div style={{display:'flex',alignItems:'center',gap:4,fontSize:12,color:'#5F6368'}}>
+                <span className="material-icons-round" style={{fontSize:14,color:'#34A853'}}>verified_user</span>
                 Verified by Play Protect
               </div>
-              <button
-                onClick={() => setInstalling(false)}
-                className="border border-[#E8EAED] rounded-full px-6 py-2 text-[13px] text-[#202124] bg-white cursor-pointer"
-              >
-                Cancel
-              </button>
+              <div style={{display:'flex',gap:12,marginTop:4}}>
+                <button onClick={()=>setInstalling(false)}
+                  style={{border:'1.5px solid #DADCE0',borderRadius:20,padding:'9px 24px',fontSize:13,
+                    color:'#202124',background:'#fff',cursor:'pointer',fontFamily:'inherit'}}>Cancel</button>
+                <button onClick={()=>showToast('Paused')}
+                  style={{border:'none',borderRadius:20,padding:'9px 24px',fontSize:13,fontWeight:500,
+                    color:'#fff',background:'#1A73E8',cursor:'pointer',fontFamily:'inherit'}}>Pause</button>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:4,fontSize:13,color:'#202124',cursor:'pointer',marginTop:4}}>
+                Available on more devices
+                <span className="material-icons-round" style={{fontSize:16}}>keyboard_arrow_down</span>
+              </div>
             </div>
           ) : installed ? (
-            <div className="flex gap-3">
-              <button
-                onClick={() => showToast(`Opening ${app.name}`)}
-                className="flex-1 py-3 bg-[#34A853] text-white rounded-lg font-semibold text-[15px] cursor-pointer border-none"
-              >
-                Open
-              </button>
-              <button
-                onClick={handleUninstall}
-                className="flex-1 py-3 bg-white text-[#1A73E8] rounded-lg font-semibold text-[15px] cursor-pointer border border-[#E8EAED]"
-              >
-                Uninstall
-              </button>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+              <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={88} radius={20}/>
+              <div style={{fontSize:20,fontWeight:500,color:'#202124'}}>{app.name}</div>
+              <div style={{display:'flex',alignItems:'center',gap:4,fontSize:13,color:'#34A853'}}>
+                <span className="material-icons-round" style={{fontSize:16}}>verified_user</span>
+                Installed
+              </div>
+              <div style={{display:'flex',gap:12,width:'100%',marginTop:4}}>
+                <button onClick={()=>showToast(`Opening ${app.name}`)}
+                  style={{flex:1,padding:'13px',background:'#1A73E8',color:'#fff',border:'none',
+                    borderRadius:8,fontSize:15,fontWeight:500,cursor:'pointer',fontFamily:'inherit'}}>Open</button>
+                <button onClick={doUninstall}
+                  style={{flex:1,padding:'13px',background:'#fff',color:'#1A73E8',
+                    border:'1.5px solid #DADCE0',borderRadius:8,fontSize:15,fontWeight:500,
+                    cursor:'pointer',fontFamily:'inherit'}}>Uninstall</button>
+              </div>
             </div>
           ) : (
-            <button
-              onClick={handleInstall}
-              className="w-full py-[14px] bg-[#1A73E8] text-white rounded-lg font-semibold text-[15px] cursor-pointer border-none"
-            >
+            <button onClick={doInstall}
+              style={{width:'100%',padding:'14px',background:'#1A73E8',color:'#fff',border:'none',
+                borderRadius:8,fontSize:15,fontWeight:600,cursor:'pointer',fontFamily:'inherit',letterSpacing:.3}}>
               Install
             </button>
           )}
         </div>
 
         {/* Screenshots */}
-        <div className="flex gap-2 px-4 pb-4 overflow-x-auto no-scrollbar">
-          {SCREENSHOT_COLORS.map((c, i) => (
-            <div
-              key={i}
-              className="w-[140px] h-[240px] rounded-lg flex-shrink-0 flex items-center justify-center text-[48px] border border-[#E8EAED]"
-              style={{ background: c }}
-            >
-              {SCREENSHOT_EMOJIS[i]}
+        <div style={{display:'flex',gap:8,padding:'4px 16px 12px',overflowX:'auto'}} className="no-scrollbar">
+          {SS_COLORS.map((c,i)=>(
+            <div key={i} style={{width:140,height:244,borderRadius:8,flexShrink:0,
+              background:c,border:'1px solid #E8EAED',display:'flex',
+              alignItems:'center',justifyContent:'center',fontSize:44}}>
+              {['🎬','📱','🎯','✨','🚀'][i]}
             </div>
           ))}
         </div>
 
         {/* About */}
-        <div className="px-4 pb-4 border-t border-[#E8EAED]">
-          <div className="flex items-center justify-between py-3">
-            <h3 className="text-[16px] font-medium text-[#202124]">About this app</h3>
-            <span className="material-icons-round text-[20px] text-[#5F6368] cursor-pointer">chevron_right</span>
+        {!installing && <>
+          <div style={{borderTop:'1px solid #E8EAED',padding:'14px 16px 10px'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:15,fontWeight:500,color:'#202124'}}>About this app</span>
+              <span className="material-icons-round" style={{fontSize:20,color:'#5F6368',cursor:'pointer'}}>chevron_right</span>
+            </div>
+            <p style={{fontSize:13,color:'#5F6368',lineHeight:1.65,margin:0}}>{app.description}</p>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:10}}>
+              {app.tags?.map(t=>(
+                <span key={t} style={{background:'#F1F3F4',borderRadius:20,padding:'5px 14px',fontSize:12,color:'#5F6368'}}>{t}</span>
+              ))}
+            </div>
           </div>
-          <p className="text-[13px] text-[#5F6368] leading-relaxed">{app.description}</p>
-          <div className="flex flex-wrap gap-2 mt-3">
-            {app.tags?.map(tag => (
-              <span key={tag} className="bg-[#F8F9FA] rounded-full px-4 py-1 text-[12px] text-[#5F6368]">{tag}</span>
-            ))}
-          </div>
-        </div>
 
-        {/* Rating bars */}
-        <div className="px-4 py-4 border-t border-[#E8EAED]">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="text-[36px] font-light text-[#202124]">{app.rating}</div>
-            <div className="flex-1">
-              {[5,4,3,2,1].map(n => (
-                <div key={n} className="flex items-center gap-2 mb-[2px]">
-                  <span className="text-[12px] text-[#5F6368] w-3">{n}</span>
-                  <div className="flex-1 h-[4px] bg-[#E8EAED] rounded-full">
-                    <div
-                      className="h-full bg-[#FBBC04] rounded-full"
-                      style={{ width: `${n===5?70:n===4?20:n===3?6:n===2?3:1}%` }}
-                    />
+          {/* Ratings chart */}
+          <div style={{borderTop:'1px solid #E8EAED',padding:'14px 16px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:4}}>
+              <div style={{fontSize:48,fontWeight:300,color:'#202124',lineHeight:1}}>{app.rating}</div>
+              <div style={{flex:1}}>
+                {[5,4,3,2,1].map(n=>(
+                  <div key={n} style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
+                    <span style={{fontSize:11,color:'#5F6368',width:8}}>{n}</span>
+                    <div style={{flex:1,height:4,background:'#E8EAED',borderRadius:2}}>
+                      <div style={{width:`${[70,20,6,3,1][5-n]}%`,height:'100%',background:'#FBBC04',borderRadius:2}}/>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Rate this app */}
-        {installed && (
-          <div className="px-4 py-4 border-t border-[#E8EAED]">
-            <h3 className="text-[15px] font-medium text-[#202124] mb-1">Rate this app</h3>
-            <p className="text-[12px] text-[#5F6368] mb-3">Tell others what you think</p>
-            <div className="flex gap-2">
-              {[1,2,3,4,5].map(n => (
-                <button
-                  key={n}
-                  onClick={() => handleRate(n)}
-                  className="material-icons-round text-[32px] border-none bg-transparent cursor-pointer"
-                  style={{ color: n <= starRating ? '#FBBC04' : '#9AA0A6' }}
-                >
-                  {n <= starRating ? 'star' : 'star_border'}
-                </button>
-              ))}
+          {/* Rate this app (only if installed) */}
+          {installed && (
+            <div style={{borderTop:'1px solid #E8EAED',padding:'14px 16px'}}>
+              <div style={{fontSize:15,fontWeight:500,color:'#202124',marginBottom:4}}>Rate this app</div>
+              <div style={{fontSize:12,color:'#5F6368',marginBottom:12}}>Tell others what you think</div>
+              <div style={{display:'flex',gap:6}}>
+                {[1,2,3,4,5].map(n=>(
+                  <span key={n} onClick={()=>rateStar(n)}
+                    className="material-icons-round"
+                    style={{fontSize:34,cursor:'pointer',color:n<=stars?'#FBBC04':'#9AA0A6'}}>
+                    {n<=stars?'star':'star_border'}
+                  </span>
+                ))}
+              </div>
+              <div onClick={()=>showToast('Opening review form')}
+                style={{color:'#1A73E8',fontSize:13,cursor:'pointer',marginTop:12}}>
+                Write a review
+              </div>
             </div>
-            <span
-              onClick={() => showToast('Opening review form')}
-              className="text-[#1A73E8] text-[13px] cursor-pointer hover:underline block mt-3"
-            >
-              Write a review
-            </span>
-          </div>
-        )}
+          )}
 
-        {/* App support */}
-        <div
-          className="flex items-center justify-between px-4 py-4 border-t border-[#E8EAED] cursor-pointer"
-          onClick={() => showToast('App support')}
-        >
-          <span className="text-[15px] font-medium text-[#202124]">App support</span>
-          <span className="material-icons-round text-[#5F6368]">keyboard_arrow_down</span>
-        </div>
+          {/* What's new */}
+          <div style={{borderTop:'1px solid #E8EAED',padding:'14px 16px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+              <span style={{fontSize:15,fontWeight:500,color:'#202124'}}>What&apos;s new</span>
+              <div style={{width:8,height:8,borderRadius:4,background:'#1A73E8'}}/>
+              <div style={{flex:1}}/>
+              <span className="material-icons-round" style={{fontSize:20,color:'#5F6368',cursor:'pointer'}}>chevron_right</span>
+            </div>
+            <div style={{fontSize:12,color:'#5F6368',marginBottom:8}}>Last updated Nov 2025</div>
+            <p style={{fontSize:13,color:'#5F6368',margin:0,lineHeight:1.6}}>Bug fixes and performance improvements.</p>
+          </div>
+
+          {/* App support */}
+          <div onClick={()=>showToast('App support')}
+            style={{borderTop:'1px solid #E8EAED',padding:'14px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer'}}>
+            <span style={{fontSize:15,fontWeight:500,color:'#202124'}}>App support</span>
+            <span className="material-icons-round" style={{fontSize:20,color:'#5F6368'}}>keyboard_arrow_down</span>
+          </div>
+        </>}
+
       </div>
-
       <Toast />
     </div>
   );
+}
+
+function Btn({icon,onClick}:{icon:string;onClick:()=>void}) {
+  return (
+    <button onClick={onClick} style={{background:'none',border:'none',cursor:'pointer',padding:8,borderRadius:20,display:'flex'}}>
+      <span className="material-icons-round" style={{fontSize:22,color:'#202124'}}>{icon}</span>
+    </button>
+  );
+}
+
+function StatCol({label,children}:{label:string;children:React.ReactNode}) {
+  return (
+    <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'0 4px'}}>
+      {children}
+      <span style={{fontSize:11,color:'#5F6368',textAlign:'center'}}>{label}</span>
+    </div>
+  );
+}
+
+function Chip({children}:{children:React.ReactNode}) {
+  return (
+    <span style={{fontSize:11,color:'#5F6368',border:'1px solid #E8EAED',borderRadius:4,padding:'2px 6px'}}>
+      {children}
+    </span>
+  );
+}
+
+function formatCount(n:number) {
+  if (n>=1e9) return (n/1e9).toFixed(0)+'B';
+  if (n>=1e6) return (n/1e6).toFixed(0)+'M';
+  return n.toLocaleString();
 }

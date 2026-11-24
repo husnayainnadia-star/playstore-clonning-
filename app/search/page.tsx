@@ -6,104 +6,93 @@ import StatusBar from '@/components/StatusBar';
 import AppIcon from '@/components/AppIcon';
 import Toast, { showToast } from '@/components/Toast';
 
-interface App {
-  id: number; name: string; developer: string;
-  icon_emoji: string; icon_color: string;
-  rating: number; category: string;
-}
+interface App { id:number; name:string; developer:string; icon_emoji:string; icon_color:string; rating:number; category:string; }
 
 export default function SearchPage() {
   const router = useRouter();
-  const [query, setQuery] = useState('');
+  const [q, setQ]           = useState('');
   const [results, setResults] = useState<App[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const doSearch = useCallback(async (q: string) => {
-    if (!q.trim()) { setResults([]); return; }
+  const search = useCallback(async (v:string) => {
+    if (!v.trim()) { setResults([]); return; }
     setLoading(true);
     try {
-      const res = await fetch(`/api/apps?search=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      setResults(data.apps || []);
-    } catch { /* ignore */ }
+      const r = await fetch(`/api/apps?search=${encodeURIComponent(v)}`);
+      const d = await r.json();
+      setResults(d.apps||[]);
+    } catch {}
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => doSearch(query), 400);
-    return () => clearTimeout(timer);
-  }, [query, doSearch]);
+    const t = setTimeout(() => search(q), 350);
+    return () => clearTimeout(t);
+  }, [q, search]);
 
   return (
-    <div className="flex flex-col h-full min-h-screen bg-white animate-in relative">
+    <div style={{display:'flex',flexDirection:'column',flex:1,background:'#fff',position:'relative'}} className="animate-in">
       <StatusBar />
 
-      {/* Search input bar */}
-      <div className="flex items-center gap-3 px-3 py-2 border-b border-[#E8EAED]">
-        <button onClick={() => router.back()} className="p-2 rounded-full hover:bg-[#F8F9FA]">
-          <span className="material-icons-round text-[#202124]">arrow_back</span>
+      {/* Search input */}
+      <div style={{display:'flex',alignItems:'center',gap:8,padding:'4px 12px 8px',borderBottom:'1px solid #E8EAED'}}>
+        <button onClick={()=>router.back()} style={{background:'none',border:'none',cursor:'pointer',padding:8,borderRadius:20,display:'flex'}}>
+          <span className="material-icons-round" style={{fontSize:22,color:'#202124'}}>arrow_back</span>
         </button>
-        <div className="flex-1 flex items-center bg-[#F8F9FA] rounded-full px-4 py-[10px] gap-2">
-          <span className="material-icons-round text-[20px] text-[#5F6368]">search</span>
-          <input
-            autoFocus
-            className="flex-1 bg-transparent border-none outline-none text-[14px] text-[#202124] placeholder:text-[#9AA0A6]"
-            placeholder="Search apps & games"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-          />
-          {query && (
-            <button onClick={() => setQuery('')} className="border-none bg-transparent cursor-pointer">
-              <span className="material-icons-round text-[18px] text-[#5F6368]">close</span>
+        <div style={{flex:1,display:'flex',alignItems:'center',background:'#F1F3F4',borderRadius:24,padding:'9px 14px',gap:8}}>
+          <span className="material-icons-round" style={{fontSize:20,color:'#5F6368'}}>search</span>
+          <input autoFocus value={q} onChange={e=>setQ(e.target.value)}
+            placeholder="Search apps &amp; games"
+            style={{flex:1,background:'none',border:'none',outline:'none',fontSize:14,color:'#202124',
+              fontFamily:'inherit'}}/>
+          {q && (
+            <button onClick={()=>setQ('')} style={{background:'none',border:'none',cursor:'pointer',display:'flex',padding:0}}>
+              <span className="material-icons-round" style={{fontSize:18,color:'#5F6368'}}>close</span>
             </button>
           )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div style={{flex:1,overflowY:'auto'}} className="no-scrollbar">
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-6 h-6 border-4 border-[#E8EAED] border-t-[#1A73E8] rounded-full animate-spin" />
+          <div style={{display:'flex',justifyContent:'center',padding:40}}>
+            <div style={{width:28,height:28,border:'3px solid #E8EAED',borderTopColor:'#1A73E8',borderRadius:14}} className="spin"/>
           </div>
-        ) : results.length > 0 ? (
-          <div className="px-4">
-            {results.map(app => (
-              <div
-                key={app.id}
-                className="flex items-center gap-3 py-3 border-b border-[#E8EAED] cursor-pointer"
-                onClick={() => router.push(`/apps/${app.id}`)}
-              >
-                <AppIcon emoji={app.icon_emoji} color={app.icon_color} size={48} radius={12} />
-                <div className="flex-1">
-                  <div className="text-[14px] font-medium text-[#202124]">{app.name}</div>
-                  <div className="text-[12px] text-[#5F6368]">{app.developer}</div>
-                  <div className="text-[12px] text-[#5F6368] flex items-center gap-1 mt-[2px]">
-                    <span className="material-icons-round text-[10px] text-[#FBBC04]">star</span>
-                    {app.rating} · {app.category}
+        ) : results.length>0 ? (
+          <div style={{padding:'0 16px'}}>
+            {results.map(a=>(
+              <div key={a.id} onClick={()=>router.push(`/apps/${a.id}`)}
+                style={{display:'flex',alignItems:'center',gap:12,padding:'11px 0',
+                  borderBottom:'1px solid #E8EAED',cursor:'pointer'}}>
+                <AppIcon emoji={a.icon_emoji} color={a.icon_color} size={50} radius={12}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:500,color:'#202124',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.name}</div>
+                  <div style={{fontSize:12,color:'#5F6368',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.developer}</div>
+                  <div style={{fontSize:12,color:'#5F6368',display:'flex',alignItems:'center',gap:3,marginTop:1}}>
+                    <span className="material-icons-round" style={{fontSize:11,color:'#FBBC04'}}>star</span>
+                    {a.rating} · {a.category}
                   </div>
                 </div>
-                <button
-                  onClick={e => { e.stopPropagation(); showToast(`Installing ${app.name}...`); }}
-                  className="bg-[#E8F0FE] text-[#1A73E8] rounded-full px-5 py-2 text-[13px] font-medium border-none cursor-pointer"
-                >
+                <button onClick={e=>{e.stopPropagation();showToast(`Installing ${a.name}...`);}}
+                  style={{background:'#E8F0FE',color:'#1A73E8',border:'none',borderRadius:20,
+                    padding:'8px 20px',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:'inherit',flexShrink:0}}>
                   Install
                 </button>
               </div>
             ))}
           </div>
-        ) : query ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <span className="material-icons-round text-[48px] text-[#9AA0A6]">search_off</span>
-            <p className="text-[14px] text-[#5F6368]">No results for &quot;{query}&quot;</p>
+        ) : q ? (
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'64px 24px',gap:12}}>
+            <span className="material-icons-round" style={{fontSize:48,color:'#9AA0A6'}}>search_off</span>
+            <p style={{fontSize:14,color:'#5F6368',margin:0,textAlign:'center'}}>No results for &ldquo;{q}&rdquo;</p>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <span className="material-icons-round text-[48px] text-[#9AA0A6]">search</span>
-            <p className="text-[14px] text-[#5F6368]">Search for apps, games &amp; more</p>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'64px 24px',gap:12}}>
+            <span className="material-icons-round" style={{fontSize:48,color:'#9AA0A6'}}>search</span>
+            <p style={{fontSize:14,color:'#5F6368',margin:0}}>Search for apps, games &amp; more</p>
           </div>
         )}
       </div>
-
       <Toast />
     </div>
   );
